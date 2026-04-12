@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TierStudio</title>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;800&display=swap');
+        
+        :root {
+            --bg-dark: #0b1121;
+            --panel-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #3b82f6;
+            --item-bg: linear-gradient(145deg, #334155, #1e293b);
+            --border: rgba(255, 255, 255, 0.08);
+        }
+
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            margin: 0; padding: 0;
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        /* --- NAVBAR & CONTROLS --- */
+        .navbar {
+            width: 100%; background: #0f172a; 
+            padding: 12px 24px; box-sizing: border-box;
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid var(--border);
+            position: sticky; top: 0; z-index: 50;
+        }
+        
+        .navbar-brand {
+            font-weight: 800; font-size: 1.4rem; letter-spacing: -0.2px; color: white;
+        }
+        .navbar-brand span { color: var(--accent); }
+
+        .nav-controls { display: flex; gap: 10px; align-items: center; }
+        
+        select {
+            padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border);
+            background: rgba(255,255,255,0.05); color: white; 
+            font-family: 'Prompt', sans-serif; font-weight: 600; font-size: 0.9rem;
+            outline: none; cursor: pointer; transition: background 0.2s;
+        }
+        select:hover { background: rgba(255,255,255,0.1); }
+        select option { background-color: var(--bg-dark); color: white; }
+
+        button {
+            padding: 8px 16px; font-weight: 600; font-family: 'Prompt', sans-serif; font-size: 0.9rem;
+            border-radius: 6px; border: none; cursor: pointer; transition: all 0.2s ease;
+            background-color: #334155; color: white; display: flex; gap: 6px; align-items: center;
+        }
+        button:hover { filter: brightness(1.15); transform: translateY(-1px); }
+        button:active { transform: translateY(0); }
+        
+        .btn-primary { background-color: var(--accent); }
+        .btn-success { background-color: #10b981; }
+        .btn-danger { background-color: #ef4444; }
+
+        /* --- MAIN LAYOUT --- */
+        .header-area { 
+            text-align: center; margin: 30px 0 20px 0; min-height: 120px; 
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            width: 90%; max-width: 800px;
+        }
+        .header-area h1 { margin: 0; font-size: 2.5rem; font-weight: 800; letter-spacing: -0.5px; line-height: 1.2; }
+        .header-area p { color: var(--text-muted); margin-top: 6px; font-size: 1rem; font-weight: 400; }
+
+        /* --- MODERN TIER LIST --- */
+        .tier-list-wrapper {
+            width: 95%; max-width: 1100px; 
+            display: flex; flex-direction: column; gap: 10px; 
+        }
+
+        .tier-row {
+            display: flex; min-height: 100px;
+            background: var(--panel-bg); border-radius: 10px; overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        .tier-label-area {
+            width: 200px; min-width: 120px; flex-shrink: 0;
+            display: flex; flex-direction: column; position: relative;
+            border-right: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .tier-label {
+            flex-grow: 1; display: flex; align-items: center; justify-content: center;
+            font-size: 20px; font-weight: 700; color: #111;
+            text-shadow: 1px 1px 0px rgba(255,255,255,0.4);
+            outline: none; transition: all 0.2s; text-align: center; 
+            padding: 10px 35px;
+            word-break: break-word;
+        }
+        .tier-label[contenteditable="true"]:hover { cursor: text; filter: brightness(1.1); }
+        .tier-label[contenteditable="true"]:focus { box-shadow: inset 0 0 0 3px rgba(255,255,255,0.8); color: #000; }
+
+        .drag-handle {
+            position: absolute; top: 6px; left: 6px;
+            color: rgba(0,0,0,0.3); font-size: 1.2rem; line-height: 1;
+            width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
+            cursor: grab; opacity: 0; transition: all 0.2s; border-radius: 4px;
+            z-index: 10;
+        }
+        .tier-label-area:hover .drag-handle { opacity: 1; }
+        .drag-handle:hover { background: rgba(255,255,255,0.3); color: #000; }
+        .drag-handle:active { cursor: grabbing; }
+
+        .tier-options-btn {
+            position: absolute; top: 6px; right: 6px;
+            background: rgba(0,0,0,0.2); color: white;
+            border-radius: 6px; width: 28px; height: 28px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; opacity: 0; transition: all 0.2s;
+            padding: 0; font-size: 1.2rem; box-shadow: none; border: 1px solid rgba(255,255,255,0.1);
+            z-index: 10;
+        }
+        .tier-label-area:hover .tier-options-btn { opacity: 1; }
+        .tier-options-btn:hover { background: rgba(0,0,0,0.6); transform: scale(1.05); }
+
+        .tier-items, .unranked-pool {
+            display: flex; flex-wrap: wrap; flex-grow: 1;
+            padding: 12px; gap: 10px; align-content: flex-start;
+        }
+        
+        .add-tier-btn {
+            width: 95%; max-width: 1100px; margin-top: 10px;
+            background-color: transparent; border: 2px dashed #475569; 
+            color: var(--text-muted); justify-content: center;
+        }
+        .add-tier-btn:hover { background-color: rgba(255,255,255,0.05); color: white; }
+
+        .bottom-section {
+            width: 95%; max-width: 1100px; margin-top: 40px; margin-bottom: 60px;
+            background: var(--panel-bg); padding: 24px; border-radius: 10px;
+            border: 1px solid var(--border); box-sizing: border-box;
+        }
+
+        .bottom-section h3 { margin-top: 0; color: var(--text-muted); font-size: 1.1rem; }
+
+        .add-item-bar { display: flex; gap: 10px; margin-bottom: 20px; }
+        .add-item-bar input {
+            flex-grow: 1; padding: 12px 16px; border-radius: 6px; border: 1px solid var(--border);
+            background: rgba(15, 23, 42, 0.6); color: white; font-family: 'Prompt', sans-serif; font-size: 1rem; outline: none;
+            transition: border-color 0.2s;
+        }
+        .add-item-bar input:focus { border-color: var(--accent); }
+
+        .unranked-pool {
+            min-height: 120px; border: 2px dashed #475569; border-radius: 8px;
+            background: rgba(15, 23, 42, 0.4); padding: 16px;
+        }
+
+        .trash-zone {
+            margin-top: 15px; min-height: 60px;
+            border: 2px dashed #ef4444; border-radius: 8px;
+            background: rgba(239, 68, 68, 0.05);
+            display: flex; align-items: center; justify-content: center;
+            color: #ef4444; font-weight: 600; font-size: 1rem;
+            transition: all 0.2s;
+        }
+        .trash-zone:hover { background: rgba(239, 68, 68, 0.15); }
+
+        .item {
+            background: var(--item-bg); padding: 10px 18px;
+            border-radius: 6px; cursor: grab; user-select: none; font-weight: 600;
+            display: flex; align-items: center; justify-content: center; font-size: 0.95rem;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
+        }
+        .item:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+        .item:active { cursor: grabbing; transform: scale(1.05); }
+
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); backdrop-filter: blur(3px);
+            display: none; justify-content: center; align-items: center; z-index: 1000;
+        }
+        .modal-content {
+            background: var(--panel-bg); padding: 30px; border-radius: 12px;
+            width: 90%; max-width: 420px; border: 1px solid var(--border);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        }
+        .modal-content h2 { margin-top: 0; font-weight: 800; font-size: 1.5rem; }
+        .modal-content label { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); }
+        .modal-content input[type="text"] { 
+            width: 100%; padding: 10px 12px; margin: 6px 0 18px 0; box-sizing: border-box; 
+            border-radius: 6px; border: 1px solid var(--border); background: var(--bg-dark); 
+            color: white; font-family: 'Prompt', sans-serif; outline: none;
+        }
+        .modal-content input:focus { border-color: var(--accent); }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+        
+        #consensus-results { max-height: 300px; overflow-y: auto; margin-bottom: 20px; padding-right: 5px; }
+        #consensus-results::-webkit-scrollbar { width: 4px; }
+        #consensus-results::-webkit-scrollbar-thumb { background: #475569; border-radius: 2px; }
+        
+        .stat-row { 
+            display: flex; justify-content: space-between; padding: 10px 12px; 
+            border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.15);
+            margin-bottom: 4px; border-radius: 4px; font-size: 0.95rem;
+        }
+        .stat-row span:last-child { color: var(--accent); font-weight: 600; }
+
+    </style>
+</head>
+<body>
+
+    <div class="navbar">
+        <div class="navbar-brand">
+            Tier<span>Studio</span>
+        </div>
+        <div class="nav-controls">
+            <select id="list-selector" onchange="switchList()"></select>
+            <button onclick="openCreateModal()">+ New</button>
+            <button class="btn-primary" id="save-btn" onclick="submitAndReset()">🚀 Submit & Reset</button>
+            <button class="btn-danger" onclick="deleteTierList()">🗑️</button>
+        </div>
+    </div>
+
+    <div class="header-area">
+        <h1 id="list-title">Loading...</h1>
+        <p id="list-topic">Topic: Loading...</p>
+        <button class="btn-success" style="margin-top: 12px;" onclick="getConsensusReport()">📊 View Consensus</button>
+    </div>
+
+    <div class="tier-list-wrapper" id="tier-list-container"></div>
+    <button onclick="addNewTier()" class="add-tier-btn">➕ Add New Tier</button>
+
+    <div class="bottom-section">
+        <h3>Unranked Pool</h3>
+        <div class="add-item-bar">
+            <input type="text" id="new-item-input" placeholder="Add a new entity" onkeypress="handleEnter(event)">
+            <button class="btn-primary" onclick="addNewEntity()">Add</button>
+        </div>
+        <div class="unranked-pool" id="unranked"></div>
+        
+        <div class="trash-zone" id="trash-zone">
+            🗑️ Drag items here to delete
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="tier-options-modal">
+        <div class="modal-content">
+            <h2>Tier Settings</h2>
+            <input type="hidden" id="editing-tier-index">
+            <label>Tier Background Color</label>
+            <input type="color" id="edit-tier-color" style="width: 100%; height: 50px; padding: 0; margin: 10px 0 25px 0; border: none; cursor: pointer; background: transparent;">
+            <div class="modal-actions" style="justify-content: space-between;">
+                <button class="btn-danger" onclick="deleteCurrentTier()">🗑️ Delete Tier</button>
+                <div style="display: flex; gap: 8px;">
+                    <button onclick="closeModals()">Cancel</button>
+                    <button class="btn-primary" onclick="saveTierOptions()">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="create-modal">
+        <div class="modal-content">
+            <h2>New Tier List</h2>
+            <label>Title</label>
+            <input type="text" id="new-title" placeholder="e.g. SIIT Subjects">
+            <label>Topic (For consensus)</label>
+            <input type="text" id="new-topic" placeholder="e.g. Classes">
+            <label>Starting Items (Comma separated)</label>
+            <input type="text" id="new-items" placeholder="Item A, Item B...">
+            <div class="modal-actions">
+                <button onclick="closeModals()">Cancel</button>
+                <button class="btn-primary" onclick="submitNewList()">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="report-modal">
+        <div class="modal-content">
+            <h2>Community Consensus</h2>
+            <div style="display: flex; gap: 8px; margin-bottom: 12px; margin-top: -5px;">
+                <select id="consensus-topic-filter" onchange="fetchConsensusData()" style="flex: 1;"></select>
+                <input type="text" id="consensus-search" placeholder="Search..." onkeyup="filterConsensusItems()" style="flex: 1; margin: 0;">
+            </div>
+            <div id="consensus-results"></div>
+            <div class="modal-actions">
+                <button class="btn-primary" onclick="closeModals()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allLists = [];
+        let currentTierList = null;
+        let activeSortables = []; 
+
+        const defaultTiers = [
+            { rank: "S", color: "#ff4d4d", items: [] },
+            { rank: "A", color: "#ff9933", items: [] },
+            { rank: "B", color: "#ffcc00", items: [] },
+            { rank: "C", color: "#33cc33", items: [] },
+            { rank: "D", color: "#3399ff", items: [] }
+        ];
+
+        function getHexColor(color) {
+            if (!color) return '#475569';
+            if (color.includes('var(--tier-s)')) return '#ff4d4d';
+            if (color.includes('var(--tier-a)')) return '#ff9933';
+            if (color.includes('var(--tier-b)')) return '#ffcc00';
+            if (color.includes('var(--tier-c)')) return '#33cc33';
+            if (color.includes('var(--tier-d)')) return '#3399ff';
+            return color; 
+        }
+
+        async function init() {
+            await fetchAllLists();
+            if (allLists.length > 0) {
+                loadListIntoUI(allLists[0]._id);
+            } else {
+                openCreateModal();
+            }
+        }
+
+        async function fetchAllLists() {
+            try {
+                const res = await fetch('/api/tierlists');
+                const rawData = await res.json();
+                
+                allLists = rawData.filter(list => list.isSubmission !== true);
+                
+                const selector = document.getElementById('list-selector');
+                selector.innerHTML = '';
+                allLists.forEach(list => {
+                    const opt = document.createElement('option');
+                    opt.value = list._id;
+                    opt.innerText = list.title;
+                    selector.appendChild(opt);
+                });
+            } catch (err) {
+                console.error("Failed to fetch lists.", err);
+            }
+        }
+
+        function switchList() {
+            const selectedId = document.getElementById('list-selector').value;
+            loadListIntoUI(selectedId);
+        }
+
+        function loadListIntoUI(id) {
+            currentTierList = allLists.find(l => l._id === id);
+            document.getElementById('list-selector').value = id;
+            document.getElementById('list-title').innerText = currentTierList.title;
+            document.getElementById('list-topic').innerText = `Topic: ${currentTierList.topic}`;
+            renderUI();
+        }
+
+        function renderUI() {
+            const container = document.getElementById('tier-list-container');
+            const unrankedPool = document.getElementById('unranked');
+            const trashZone = document.getElementById('trash-zone');
+            
+            activeSortables.forEach(sortable => sortable.destroy());
+            activeSortables = [];
+
+            container.innerHTML = ''; 
+            unrankedPool.innerHTML = '';
+            
+            currentTierList.tiers.forEach((tier, index) => {
+                const row = document.createElement('div');
+                row.className = 'tier-row';
+                tier.color = getHexColor(tier.color);
+
+                row.innerHTML = `
+                    <div class="tier-label-area" style="background-color: ${tier.color};">
+                        <div class="drag-handle" title="Drag to reorder tier">☰</div>
+                        <div class="tier-label" contenteditable="true" spellcheck="false" title="Click to edit">${tier.rank}</div>
+                        <button class="tier-options-btn" onclick="openTierOptions(${index})" title="Tier Settings">⋮</button>
+                    </div>
+                    <div class="tier-items" id="tier-${index}">
+                        ${tier.items.map(item => `<div class="item">${item}</div>`).join('')}
+                    </div>
+                `;
+                container.appendChild(row);
+                
+                activeSortables.push(new Sortable(document.getElementById(`tier-${index}`), { 
+                    group: 'shared', 
+                    animation: 150 
+                }));
+            });
+
+            activeSortables.push(new Sortable(container, {
+                animation: 150,
+                handle: '.drag-handle',
+                onEnd: function() {
+                    syncDOMtoObject();
+                    renderUI(); 
+                    silentSave();
+                }
+            }));
+
+            unrankedPool.innerHTML = currentTierList.unranked_pool.map(item => `<div class="item">${item}</div>`).join('');
+            
+            activeSortables.push(new Sortable(unrankedPool, { 
+                group: 'shared', 
+                animation: 150 
+            }));
+
+            activeSortables.push(new Sortable(trashZone, {
+                group: 'shared',
+                animation: 150,
+                onAdd: function (evt) {
+                    evt.item.remove();
+                    syncDOMtoObject();
+                    silentSave();
+                }
+            }));
+        }
+
+        function syncDOMtoObject() {
+            if (!currentTierList) return;
+            const updatedTiers = [];
+            const tierElements = document.querySelectorAll('.tier-items');
+            const labelElements = document.querySelectorAll('.tier-label'); 
+            
+            tierElements.forEach((el, index) => {
+                const items = Array.from(el.children).map(child => child.innerText);
+                const currentRankText = labelElements[index].innerText.trim() || "Tier";
+                const existingColor = currentTierList.tiers[index] ? currentTierList.tiers[index].color : "#475569";
+                updatedTiers.push({ rank: currentRankText, color: existingColor, items: items });
+            });
+
+            currentTierList.tiers = updatedTiers;
+            currentTierList.unranked_pool = Array.from(document.getElementById('unranked').children).map(child => child.innerText);
+        }
+
+        async function submitAndReset() {
+            syncDOMtoObject();
+            
+            const hasRankedItems = currentTierList.tiers.some(t => t.items.length > 0);
+            if(!hasRankedItems) {
+                alert("Please rank at least one item before submitting.");
+                return;
+            }
+
+            const btn = document.getElementById('save-btn');
+            btn.innerHTML = "⌛ Submitting...";
+            btn.style.backgroundColor = "#94a3b8"; 
+            
+            // 1. CREATE A NEW DOCUMENT (Submission) for Consensus
+            const submissionData = {
+                ...currentTierList,
+                isSubmission: true,
+                title: `${currentTierList.title} (Submission)`
+            };
+            delete submissionData._id;
+
+            await fetch('/api/tierlists', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(submissionData)
+            });
+
+            // 2. RESET THE TEMPLATE
+            currentTierList.tiers.forEach(tier => {
+                currentTierList.unranked_pool.push(...tier.items);
+                tier.items = [];
+            });
+
+            // 3. Save the "Empty" state back to the original template ID
+            await fetch(`/api/tierlists/${currentTierList._id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(currentTierList)
+            });
+            
+            renderUI();
+
+            setTimeout(() => { 
+                btn.innerHTML = "🚀 Submit & Reset"; 
+                btn.style.backgroundColor = "var(--accent)"; 
+                alert("Ranking submitted to consensus! Board reset for the next person.");
+            }, 600);
+        }
+
+        async function silentSave() {
+            syncDOMtoObject();
+            await fetch(`/api/tierlists/${currentTierList._id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(currentTierList)
+            });
+        }
+
+        function openTierOptions(index) {
+            syncDOMtoObject(); 
+            document.getElementById('editing-tier-index').value = index;
+            document.getElementById('edit-tier-color').value = getHexColor(currentTierList.tiers[index].color);
+            document.getElementById('tier-options-modal').style.display = 'flex';
+        }
+
+        function saveTierOptions() {
+            const index = document.getElementById('editing-tier-index').value;
+            const newColor = document.getElementById('edit-tier-color').value;
+            currentTierList.tiers[index].color = newColor;
+            renderUI();
+            silentSave();
+            closeModals();
+        }
+
+        function deleteCurrentTier() {
+            const index = document.getElementById('editing-tier-index').value;
+            if(!confirm(`Delete this tier?`)) return;
+            const itemsToRescue = currentTierList.tiers[index].items;
+            if (itemsToRescue.length > 0) {
+                currentTierList.unranked_pool.push(...itemsToRescue);
+            }
+            currentTierList.tiers.splice(index, 1);
+            renderUI();
+            silentSave();
+            closeModals();
+        }
+
+        function handleEnter(e) { if(e.key === 'Enter') addNewEntity(); }
+
+        function addNewEntity() {
+            const input = document.getElementById('new-item-input');
+            const val = input.value.trim();
+            if(!val) return;
+            syncDOMtoObject(); 
+            currentTierList.unranked_pool.push(val);
+            input.value = '';
+            renderUI();
+            silentSave();
+        }
+
+        async function submitNewList() {
+            const title = document.getElementById('new-title').value || "Untitled";
+            const topic = document.getElementById('new-topic').value || "General";
+            const itemsStr = document.getElementById('new-items').value;
+            const itemsArray = itemsStr.split(',').map(i => i.trim()).filter(i => i !== "");
+
+            const newList = { title, topic, unranked_pool: itemsArray, tiers: JSON.parse(JSON.stringify(defaultTiers)), isSubmission: false };
+            
+            await fetch('/api/tierlists', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newList)
+            });
+            
+            closeModals();
+            document.getElementById('new-title').value = '';
+            document.getElementById('new-topic').value = '';
+            document.getElementById('new-items').value = '';
+            
+            await fetchAllLists();
+            loadListIntoUI(allLists[allLists.length-1]._id);
+        }
+
+        function addNewTier() {
+            if(!currentTierList) return;
+            syncDOMtoObject(); 
+            currentTierList.tiers.push({ rank: "New", color: "#475569", items: [] });
+            renderUI();
+            silentSave();
+        }
+
+        async function deleteTierList() {
+            if(!confirm(`Delete permanently?`)) return;
+            await fetch(`/api/tierlists/${currentTierList._id}`, { method: 'DELETE' });
+            await init();
+        }
+
+        async function getConsensusReport() {
+            const uniqueTopics = [...new Set(allLists.map(l => l.topic))];
+            const topicSelect = document.getElementById('consensus-topic-filter');
+            topicSelect.innerHTML = '';
+            
+            uniqueTopics.forEach(topic => {
+                const opt = document.createElement('option');
+                opt.value = topic; opt.innerText = `Topic: ${topic}`;
+                if (topic === currentTierList.topic) opt.selected = true;
+                topicSelect.appendChild(opt);
+            });
+            
+            document.getElementById('consensus-search').value = ''; 
+            await fetchConsensusData();
+            document.getElementById('report-modal').style.display = 'flex';
+        }
+
+        async function fetchConsensusData() {
+            const topic = document.getElementById('consensus-topic-filter').value;
+            const res = await fetch(`/api/reports/consensus?topic=${encodeURIComponent(topic)}`);
+            const data = await res.json();
+            
+            const resultsDiv = document.getElementById('consensus-results');
+            resultsDiv.innerHTML = '';
+
+            if(data.length === 0) {
+                resultsDiv.innerHTML = '<p style="text-align:center; color: var(--text-muted);">No rankings submitted yet.</p>';
+            } else {
+                data.forEach(stat => {
+                    resultsDiv.innerHTML += `
+                        <div class="stat-row consensus-item">
+                            <span class="item-name" style="flex: 1;">${stat._id.item}</span>
+                            <span style="flex: 1; text-align: right;">➔ <b>[ ${stat._id.rank} ]</b> <span style="color: var(--text-muted); font-size: 0.85rem;">(${stat.count} votes)</span></span>
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        function filterConsensusItems() {
+            const query = document.getElementById('consensus-search').value.toLowerCase();
+            const rows = document.querySelectorAll('.consensus-item');
+            rows.forEach(row => {
+                const itemName = row.querySelector('.item-name').innerText.toLowerCase();
+                row.style.display = itemName.includes(query) ? 'flex' : 'none';
+            });
+        }
+
+        function openCreateModal() { document.getElementById('create-modal').style.display = 'flex'; }
+        function closeModals() { 
+            document.getElementById('create-modal').style.display = 'none'; 
+            document.getElementById('report-modal').style.display = 'none'; 
+            document.getElementById('tier-options-modal').style.display = 'none'; 
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
