@@ -16,11 +16,11 @@ This project was developed as a technical implementation of a **NoSQL Database A
 
 ## 🛠️ Tech Stack
 * **Frontend:** HTML5, CSS3, JavaScript (Vanilla DOM API)
-* **Backend:** Node.js, Express.js
+* **Backend:** Python, Flask
 * **Database:** MongoDB (NoSQL Document Database)
 
 ## 📦 Installation and Setup
-To run this project locally, you will need Node.js installed and a MongoDB cluster (like MongoDB Atlas).
+To run this project locally, you will need Python installed and a MongoDB connection (local or Atlas).
 
 **1. Clone the repository**
 
@@ -28,18 +28,15 @@ To run this project locally, you will need Node.js installed and a MongoDB clust
     cd TierStudio
 
 **2. Install dependencies**
+Make sure you are in the project folder, then run:
 
-    npm install
+    pip install flask pymongo flask-cors
 
-**3. Configure Environment Variables**
-Create a .env file in the root directory and add your MongoDB connection string and desired port:
+**3. Start the server**
 
-    PORT=5000
-    MONGODB_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/tierstudio
+    python app.py
 
-**4. Start the server**
-
-    npm start
+*(Note: If your main Python file is named something else, like server.py, replace app.py with your exact file name).*
 
 The application will be running at http://localhost:5000.
 
