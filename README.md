@@ -50,7 +50,3 @@ This application leverages a single-collection pattern with embedded arrays. Bec
 * Phunyaphat Vijitrapornphan
 * Tanadol Wonglerdsiri
 * Nattaporn Lamwang
-
-***
-
-Note: Don't forget to change YourUsername in the Git Clone link to your actual GitHub username!
