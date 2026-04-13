@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify, render_template
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 from flask_cors import CORS
-from datetime import datetime
+from datetime import datetime, timezone
 
 app = Flask(__name__)
 CORS(app) # Allows frontend to communicate with backend
@@ -25,8 +25,8 @@ def create_tierlist():
     data = request.json
     data['metadata'] = {
         'views': 0,
-        'created_at': datetime.utcnow().isoformat(),
-        'last_updated': datetime.utcnow().isoformat()
+        'created_at': datetime.now(timezone.utc).isoformat(),
+        'last_updated': datetime.now(timezone.utc).isoformat()
     }
     result = collection.insert_one(data)
     return jsonify({"message": "Created successfully", "id": str(result.inserted_id)}), 201
@@ -57,7 +57,7 @@ def update_tierlist(id):
     # Ensure metadata exists before updating timestamp
     if 'metadata' not in data:
         data['metadata'] = {}
-    data['metadata']['last_updated'] = datetime.utcnow().isoformat()
+    data['metadata']['last_updated'] = datetime.now(timezone.utc).isoformat()
     
     collection.update_one(
         {"_id": ObjectId(id)},
