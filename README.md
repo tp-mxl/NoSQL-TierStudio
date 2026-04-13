@@ -20,12 +20,14 @@ This project was developed as a technical implementation of a **NoSQL Database A
 * **Database:** MongoDB (NoSQL Document Database)
 
 ## 📦 Installation and Setup
-To run this project locally, you will need Python installed and a MongoDB connection (local or Atlas).
+Before running this project locally, ensure you have the following prerequisites ready:
+* **Python** (3.x recommended)
+* **MongoDB**: You must have a MongoDB database running. You can either install MongoDB Community Server to run it locally (ensure the background service is started), or use a cloud database like MongoDB Atlas.
 
 **1. Clone the repository**
 
-    git clone https://github.com/YourUsername/TierStudio.git
-    cd TierStudio
+    git clone https://github.com/tp-mxl/NoSQL-TierStudio.git
+    cd NoSQL-TierStudio
 
 **2. Install dependencies**
 Make sure you are in the project folder, then run:
