@@ -22,7 +22,7 @@ This project was developed as a technical implementation of a **NoSQL Database A
 ## 📦 Installation and Setup
 Before running this project locally, ensure you have the following prerequisites ready:
 * **Python** (3.x recommended)
-* **MongoDB**: You must have a MongoDB database running. You can either install MongoDB Community Server to run it locally (ensure the background service is started), or use a cloud database like MongoDB Atlas.
+* **MongoDB**: You must have a MongoDB database running. You can either install [MongoDB Community Server](https://www.mongodb.com/try/download/community) to run it locally (ensure the background service is started), or use a cloud database like [MongoDB Atlas](https://www.mongodb.com/products/platform/atlas-database).
 
 **1. Clone the repository**
 
